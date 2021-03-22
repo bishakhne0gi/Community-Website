@@ -12,31 +12,26 @@ export function Login() {
   const passwordInput = useRef("password");
   const schema = { email: "", password: "" };
   const [credential, setCredential] = useState(schema);
+  const [status, setStatus] = useState("");
   const dispatch = useDispatch();
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     setCredential({ ...credential, [e.target.name]: e.target.value });
   };
 
-  const logout = useSelector(state => state.logout);
-  const [openLogoutSuccess, setOpenLogoutSuccessToast] = React.useState(false);
-  const [openError1, setOpenError1Toast] = React.useState(false); //backend error
-  const [openError2, setOpenError2Toast] = React.useState(false); //unauthorized
-  const [openError3, setOpenError3Toast] = React.useState(false); //unknown Error
+  const logout = useSelector((state) => state.logout);
+  const [open, setOpenToast] = React.useState(false);
 
   const handleCloseToast = (event, reason) => {
     if (reason === "clickaway") {
       return;
     }
-    setOpenLogoutSuccessToast(false);
-    setOpenError1Toast(false);
-    setOpenError2Toast(false);
-    setOpenError3Toast(false);
+    setOpenToast(false);
   };
 
   useEffect(() => {
     if (logout) {
-      setOpenLogoutSuccessToast(true);
+      setOpenToast(true);
       localStorage.removeItem("log");
       dispatch({ type: actions.LOG_OUT });
     }
@@ -50,30 +45,22 @@ export function Login() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(credential),
-  })
-      .then(response =>
-        response
-          .json()
-          .then(res => {
-            if (response.status === 200) {
-              localStorage.setItem("token", res.token);
-              localStorage.setItem("isSuperAdmin", res.isSuperAdmin);
-              window.location = "/dashboard?loggedin";
-            } else if (response.status === 400) {
-              setOpenError2Toast(true);
-            } else {
-              setOpenError3Toast(true);
-            }
-          })
-          .catch(err => setOpenError3Toast(true))
-      )
-      .catch(err => {
-        setOpenError1Toast(true);
-        console.error("must be a backend problem🤔:", err);
-      });
+    }).then((response) =>
+      response.json().then((res) => {
+        if (response.status === 200) {
+          localStorage.setItem("token", res.token);
+          localStorage.setItem("isSuperAdmin", res.isSuperAdmin);
+          window.location = "/dashboard";
+        } else {
+          setStatus("Unauthorised");
+        }
+      })
+    );
   }
 
-  hidePassword ? (passwordInput.current = "text") : (passwordInput.current = "password");
+  hidePassword
+    ? (passwordInput.current = "text")
+    : (passwordInput.current = "password");
 
   return (
     <>
@@ -115,40 +102,32 @@ export function Login() {
                   ></i>
                 </div>
                 <div className={style["submit-btn"]}>
-                  <Button2 id="btn" label="Sign In" type="submit" className={style["submit-btn-text"]} />
+                  <Button2
+                    id="btn"
+                    label="Sign In"
+                    type="submit"
+                    className={style["submit-btn-text"]}
+                  />
                 </div>
                 <Link to="/forgot-password">
-                  <h5 style={{ textAlign: "center" }}>Forgot your password?</h5>
+                  <h5 style={{textAlign:'center'}}>
+                    Forgot your password?
+                  </h5>
                 </Link>
               </div>
             </form>
-            {/* <div style={{ color: "red", textAlign: "center", fontWeight: "bold" }}>{status}</div> */}
+            <div
+              style={{ color: "red", textAlign: "center", fontWeight: "bold" }}
+            >
+              {status}
+            </div>
           </div>
         </div>
       </div>
       <SimpleToast
-        open={openLogoutSuccess}
+        open={open}
         message="Successfully Logged Out!"
         handleCloseToast={handleCloseToast}
-        severity="success"
-      />
-      <SimpleToast
-        open={openError1}
-        message="Connection Error! Please try again later"
-        handleCloseToast={handleCloseToast}
-        severity="error"
-      />
-      <SimpleToast
-        open={openError2}
-        message="Invalid Username or Password! Try again."
-        handleCloseToast={handleCloseToast}
-        severity="error"
-      />
-      <SimpleToast
-        open={openError3}
-        message="Invalid Username or Password! Try again."
-        handleCloseToast={handleCloseToast}
-        severity="error"
       />
     </>
   );
